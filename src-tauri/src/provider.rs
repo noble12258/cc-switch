@@ -170,6 +170,9 @@ pub struct ProviderTestConfig {
     /// 最大重试次数
     #[serde(rename = "maxRetries", skip_serializing_if = "Option::is_none")]
     pub max_retries: Option<u32>,
+    /// 附加到 anthropic-beta 请求头的额外 flag（逗号分隔，如 "context-1m-2025-08-07"）
+    #[serde(rename = "extraBetaFlags", skip_serializing_if = "Option::is_none")]
+    pub extra_beta_flags: Option<String>,
 }
 
 /// 认证绑定来源

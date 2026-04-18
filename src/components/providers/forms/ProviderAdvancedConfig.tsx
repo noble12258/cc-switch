@@ -222,6 +222,31 @@ export function ProviderAdvancedConfig({
                   disabled={!testConfig.enabled}
                 />
               </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="extra-beta-flags">
+                  {t("providerAdvanced.extraBetaFlags", {
+                    defaultValue: "Extra Beta Flags",
+                  })}
+                </Label>
+                <Input
+                  id="extra-beta-flags"
+                  value={testConfig.extraBetaFlags || ""}
+                  onChange={(e) =>
+                    onTestConfigChange({
+                      ...testConfig,
+                      extraBetaFlags: e.target.value || undefined,
+                    })
+                  }
+                  placeholder="context-1m-2025-08-07"
+                  disabled={!testConfig.enabled}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("providerAdvanced.extraBetaFlagsDesc", {
+                    defaultValue:
+                      "附加到 anthropic-beta 请求头的额外 flag，多个用逗号分隔",
+                  })}
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -437,13 +437,24 @@ impl StreamCheckService {
                 request_builder = request_builder.header("x-api-key", &auth.api_key);
             }
 
+            let mut beta_value =
+                "claude-code-20250219,interleaved-thinking-2025-05-14".to_string();
+            if let Some(extra) = provider
+                .meta
+                .as_ref()
+                .and_then(|m| m.test_config.as_ref())
+                .filter(|tc| tc.enabled)
+                .and_then(|tc| tc.extra_beta_flags.as_deref())
+            {
+                if !extra.is_empty() {
+                    beta_value = format!("{},{}", beta_value, extra);
+                }
+            }
+
             request_builder = request_builder
                 // Anthropic required headers
                 .header("anthropic-version", "2023-06-01")
-                .header(
-                    "anthropic-beta",
-                    "claude-code-20250219,interleaved-thinking-2025-05-14",
-                )
+                .header("anthropic-beta", &beta_value)
                 .header("anthropic-dangerous-direct-browser-access", "true")
                 // Content type headers
                 .header("content-type", "application/json")
@@ -1229,8 +1240,18 @@ impl StreamCheckService {
         config: &StreamCheckConfig,
     ) -> String {
         match app_type {
-            AppType::Claude => Self::extract_env_model(provider, "ANTHROPIC_MODEL")
-                .unwrap_or_else(|| config.claude_model.clone()),
+            AppType::Claude => {
+                let tc_model = provider
+                    .meta
+                    .as_ref()
+                    .and_then(|m| m.test_config.as_ref())
+                    .filter(|tc| tc.enabled)
+                    .and_then(|tc| tc.test_model.clone());
+                tc_model.unwrap_or_else(|| {
+                    Self::extract_env_model(provider, "ANTHROPIC_MODEL")
+                        .unwrap_or_else(|| config.claude_model.clone())
+                })
+            }
             AppType::Codex => {
                 Self::extract_codex_model(provider).unwrap_or_else(|| config.codex_model.clone())
             }
