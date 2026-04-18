@@ -107,6 +107,8 @@ export interface ProviderTestConfig {
   degradedThresholdMs?: number;
   // 最大重试次数
   maxRetries?: number;
+  // 附加到 anthropic-beta 请求头的额外 flag（逗号分隔）
+  extraBetaFlags?: string;
 }
 
 export type AuthBindingSource = "provider_config" | "managed_account";
