@@ -196,6 +196,14 @@ pub fn get() -> Client {
         })
 }
 
+/// 按需创建带指定代理的 HTTP 客户端
+///
+/// 与全局客户端独立，不影响 `get()` 返回的实例。
+/// 用于 stream check 等需要使用 provider 级代理的场景。
+pub fn build_with_proxy(proxy_url: Option<&str>) -> Result<Client, String> {
+    build_client(proxy_url)
+}
+
 /// 获取当前代理 URL
 ///
 /// 返回当前配置的代理 URL，None 表示直连。

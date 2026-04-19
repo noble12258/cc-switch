@@ -224,8 +224,8 @@ impl StreamCheckService {
             .or_else(|| adapter.extract_auth(provider))
             .ok_or_else(|| AppError::Message("API Key not found".to_string()))?;
 
-        // 获取 HTTP 客户端
-        let client = crate::proxy::http_client::get();
+        // 获取 HTTP 客户端（优先使用 provider 配置的代理）
+        let client = Self::resolve_provider_client(provider);
         let request_timeout = std::time::Duration::from_secs(config.timeout_secs);
 
         let model_to_test = Self::resolve_test_model(app_type, provider, config);
@@ -683,8 +683,8 @@ impl StreamCheckService {
         config: &StreamCheckConfig,
         start: Instant,
     ) -> Result<StreamCheckResult, AppError> {
-        // 获取 HTTP 客户端
-        let client = crate::proxy::http_client::get();
+        // 获取 HTTP 客户端（优先使用 provider 配置的代理）
+        let client = Self::resolve_provider_client(provider);
         let request_timeout = std::time::Duration::from_secs(config.timeout_secs);
 
         let model_to_test = Self::resolve_test_model(app_type, provider, config);
@@ -1303,6 +1303,31 @@ impl StreamCheckService {
             .and_then(|value| value.as_str())
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
+    }
+
+    /// 根据 provider 的 env 配置创建 HTTP 客户端
+    ///
+    /// 如果 provider 配置了 HTTPS_PROXY / HTTP_PROXY，则创建走该代理的专用客户端；
+    /// 否则回退到全局客户端。
+    fn resolve_provider_client(provider: &Provider) -> Client {
+        let proxy_url = Self::extract_env_model(provider, "HTTPS_PROXY")
+            .or_else(|| Self::extract_env_model(provider, "HTTP_PROXY"));
+
+        match proxy_url {
+            Some(ref url) => {
+                log::info!(
+                    "[StreamCheck] Using provider proxy: {}",
+                    crate::proxy::http_client::mask_url(url)
+                );
+                crate::proxy::http_client::build_with_proxy(Some(url)).unwrap_or_else(|e| {
+                    log::warn!(
+                        "[StreamCheck] Failed to build provider proxy client: {e}, falling back to global"
+                    );
+                    crate::proxy::http_client::get()
+                })
+            }
+            None => crate::proxy::http_client::get(),
+        }
     }
 
     fn extract_codex_model(provider: &Provider) -> Option<String> {
